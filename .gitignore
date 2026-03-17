@@ -1,0 +1,19 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Images (too large for git)
+data/images/
+
+# Debug screenshots
+debug*.png
+
+# Scraper state
+crawl_state.json
+
+# OS
+.DS_Store
+
+# Claude
+.claude/
