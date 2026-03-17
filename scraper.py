@@ -399,7 +399,16 @@ def _extract_style_with(page, source_pid: str) -> list[dict]:
                         if (pid !== sourcePid && !unique[pid]) {
                             // Get text - first meaningful line
                             const text = a.textContent.trim();
-                            unique[pid] = {href, text};
+                            // Extract image URLs from this product card
+                            const cardImages = [];
+                            const imgs = a.querySelectorAll('img');
+                            for (const img of imgs) {
+                                const src = img.src || img.getAttribute('data-src') || '';
+                                if (src && src.startsWith('http')) {
+                                    cardImages.push(src);
+                                }
+                            }
+                            unique[pid] = {href, text, images: cardImages};
                         }
                     }
                 }
@@ -408,7 +417,8 @@ def _extract_style_with(page, source_pid: str) -> list[dict]:
                     return results.map(([pid, info]) => ({
                         product_id: pid,
                         href: info.href,
-                        text: info.text
+                        text: info.text,
+                        images: info.images
                     }));
                 }
                 container = container.parentElement;
@@ -427,11 +437,12 @@ def _extract_style_with(page, source_pid: str) -> list[dict]:
             # Fallback: derive name from URL slug if link had no text
             if not name and href:
                 name = _name_from_url(href)
+            images = item.get("images", [])
             recommended.append({
                 "product_id": pid,
                 "product_name": name,
                 "product_url": href,
-                "product_images": [],
+                "product_images": images,
             })
 
     except Exception as e:

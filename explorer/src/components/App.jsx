@@ -6,10 +6,11 @@ import ProductDetail from './ProductDetail';
 
 export default function App() {
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const { query, setQuery, results } = useSearch(dataset);
+  const [sortAlpha, setSortAlpha] = useState(true);
+  const { query, setQuery, results } = useSearch(dataset, sortAlpha);
 
   return (
-    <div className="app">
+    <div className={`app${selectedProduct ? ' has-detail' : ''}`}>
       <div className="bg-noise" />
       <Sidebar
         products={results}
@@ -18,8 +19,10 @@ export default function App() {
         onSelect={setSelectedProduct}
         query={query}
         onSearchChange={setQuery}
+        sortAlpha={sortAlpha}
+        onToggleSort={() => setSortAlpha(s => !s)}
       />
-      <ProductDetail product={selectedProduct} />
+      <ProductDetail product={selectedProduct} onBack={() => setSelectedProduct(null)} />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 
 const ID_PATTERN = /^\d{5,}$/;
 
-export function useSearch(products) {
+export function useSearch(products, sortAlpha = false) {
   const [query, setQuery] = useState('');
 
   const fuse = useMemo(() => new Fuse(products, {
@@ -18,17 +18,24 @@ export function useSearch(products) {
 
   const results = useMemo(() => {
     const q = query.trim();
-    if (!q) return products;
-
-    // For numeric queries (product IDs), use exact prefix matching
-    if (ID_PATTERN.test(q)) {
+    let items;
+    if (!q) {
+      items = products;
+    } else if (ID_PATTERN.test(q)) {
       const exact = products.filter(p => p.source_product_id === q);
-      if (exact.length > 0) return exact;
-      return products.filter(p => p.source_product_id.includes(q));
+      if (exact.length > 0) items = exact;
+      else items = products.filter(p => p.source_product_id.includes(q));
+    } else {
+      items = fuse.search(q).map(r => r.item);
     }
 
-    return fuse.search(q).map(r => r.item);
-  }, [query, fuse, products]);
+    if (sortAlpha) {
+      return [...items].sort((a, b) =>
+        a.source_product_name.localeCompare(b.source_product_name)
+      );
+    }
+    return items;
+  }, [query, fuse, products, sortAlpha]);
 
   return { query, setQuery, results };
 }
