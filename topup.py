@@ -1,50 +1,58 @@
-import json
+"""Top-up script to fill gaps and reach 100 men + 100 women products.
+
+Run after the main scraper to discover additional products from deeper
+subcategories and scrape them until the target counts are met.
+"""
+
+from __future__ import annotations
+
+import logging
 from urllib.parse import urljoin
 
+from playwright.sync_api import Page, sync_playwright
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
-from playwright.sync_api import sync_playwright
-from playwright_stealth import Stealth
 
-from scraper import (
-    BASE_URL,
-    JSONL_PATH,
-    STATE_PATH,
-    _dismiss_cookie_banner,
-    _scroll_to_load_products,
-    append_jsonl,
-    download_images,
-    extract_product_id,
-    generate_csv,
-    log,
+from browser_utils import (
+    dismiss_cookie_banner,
+    managed_browser,
     random_delay,
-    scrape_product,
+    scroll_to_load_products,
 )
+from dataset import (
+    STATE_PATH,
+    append_record,
+    generate_csv,
+    load_records,
+    load_state,
+    save_state,
+)
+from scraper import BASE_URL, download_images, extract_product_id, scrape_product
+
+log = logging.getLogger(__name__)
 
 
-def get_current_counts():
-    men = women = 0
-    scraped_ids = set()
-    if JSONL_PATH.exists():
-        with open(JSONL_PATH) as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                r = json.loads(line)
-                scraped_ids.add(r["source_product_id"])
-                if r["section"] == "men":
-                    men += 1
-                else:
-                    women += 1
-    return men, women, scraped_ids
+def get_current_counts() -> tuple[int, int, set[str]]:
+    """Return (men_count, women_count, scraped_ids) from the current JSONL."""
+    records = load_records()
+    men_count = sum(1 for r in records if r.section == "men")
+    women_count = sum(1 for r in records if r.section == "women")
+    scraped_ids = {r.source_product_id for r in records}
+    return men_count, women_count, scraped_ids
 
 
-def discover_extra_urls(page, section, scraped_ids, needed, already_discovered):
+def discover_extra_urls(
+    page: Page,
+    section: str,
+    scraped_ids: set[str],
+    needed: int,
+    already_discovered: list[str],
+) -> list[str]:
     """Find product URLs not yet scraped from deeper subcategories."""
-    known_ids = set(scraped_ids) | set(extract_product_id(u) for u in already_discovered if extract_product_id(u))
+    known_ids = set(scraped_ids) | {
+        pid for u in already_discovered if (pid := extract_product_id(u))
+    }
 
-    # Subcategories to try (different from the ones already exhausted)
-    extra_subcats = {
+    extra_subcats: dict[str, list[str]] = {
         "men": [
             "knitwear",
             "coats-and-jackets",
@@ -81,18 +89,18 @@ def discover_extra_urls(page, section, scraped_ids, needed, already_discovered):
         ],
     }
 
-    new_urls = []
+    new_urls: list[str] = []
     for subcat in extra_subcats.get(section, []):
-        if len(new_urls) >= needed * 3:  # gather extra in case some lack "Style with"
+        if len(new_urls) >= needed * 3:
             break
 
         cat_url = f"{BASE_URL}/{section}/{subcat}"
-        log.info("Discovering extras from %s", cat_url)
+        log.info(f"Discovering extras from {cat_url}")
         try:
             page.goto(cat_url, wait_until="domcontentloaded", timeout=30000)
             random_delay(2, 3)
-            _dismiss_cookie_banner(page)
-            _scroll_to_load_products(page, max_scrolls=10)
+            dismiss_cookie_banner(page)
+            scroll_to_load_products(page, max_scrolls=10)
 
             links = page.query_selector_all('a[href*="/product/"]')
             for link in links:
@@ -105,48 +113,46 @@ def discover_extra_urls(page, section, scraped_ids, needed, already_discovered):
                     known_ids.add(pid)
                     new_urls.append(full_url)
         except PlaywrightTimeout:
-            log.warning("Timeout on %s, skipping", cat_url)
-        except Exception as e:
-            log.warning("Error on %s: %s", cat_url, e)
+            log.warning(f"Timeout on {cat_url}, skipping")
+        except Exception as exc:
+            log.warning(f"Error on {cat_url}: {exc}")
 
         random_delay(1, 2)
 
-    log.info("Found %d new candidate URLs for %s (need %d)", len(new_urls), section, needed)
+    log.info(f"Found {len(new_urls)} new candidate URLs for {section} (need {needed})")
     return new_urls
 
 
-def main():
+def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%H:%M:%S",
+    )
+
     men_count, women_count, scraped_ids = get_current_counts()
     men_needed = max(0, 100 - men_count)
     women_needed = max(0, 100 - women_count)
-    log.info("Current: men=%d, women=%d. Need: men=+%d, women=+%d", men_count, women_count, men_needed, women_needed)
+    log.info(
+        f"Current: men={men_count}, women={women_count}. "
+        f"Need: men=+{men_needed}, women=+{women_needed}"
+    )
 
     if men_needed == 0 and women_needed == 0:
         log.info("Already at 100+100, nothing to do")
         return
 
-    # Load existing discovered URLs to avoid re-visiting
-    state = json.loads(STATE_PATH.read_text()) if STATE_PATH.exists() else {}
-    already_discovered = {}
+    state = load_state()
+    already_discovered: dict[str, list[str]] = {}
     for section in ["men", "women"]:
-        already_discovered[section] = state.get("discovered_urls", {}).get(section, [])
+        already_discovered[section] = state.discovered_urls.get(section, [])
 
-    stealth = Stealth(
-        navigator_platform_override="MacIntel",
-        navigator_vendor_override="Google Inc.",
-    )
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False, channel="chrome")
-        context = browser.new_context(viewport={"width": 1440, "height": 900}, locale="en-GB")
-        stealth.apply_stealth_sync(context)
-        page = context.new_page()
-
+    with sync_playwright() as pw, managed_browser(pw) as (browser, context, page):
         for section, needed in [("men", men_needed), ("women", women_needed)]:
             if needed <= 0:
                 continue
 
-            log.info("=== Top-up: need %d more for %s ===", needed, section)
+            log.info(f"=== Top-up: need {needed} more for {section} ===")
             extra_urls = discover_extra_urls(
                 page,
                 section,
@@ -169,27 +175,24 @@ def main():
                     random_delay(1, 2)
                     continue
 
-                download_images(context, record["source_product_id"], record["source_product_images"])
-                append_jsonl(record)
+                download_images(context, record.source_product_id, record.source_product_images)
+                append_record(record)
                 scraped_ids.add(pid)
                 scraped_this += 1
-                log.info("  [%s] top-up %d/%d done", section, scraped_this, needed)
+                log.info(f"  [{section}] top-up {scraped_this}/{needed} done")
                 random_delay(2, 4)
 
             if scraped_this < needed:
-                log.warning("Could only add %d/%d for %s", scraped_this, needed, section)
-
-        browser.close()
+                log.warning(f"Could only add {scraped_this}/{needed} for {section}")
 
     # Update state with new scraped IDs
-    state["scraped_ids"] = list(scraped_ids)
-    STATE_PATH.write_text(json.dumps(state, indent=2))
+    state.scraped_ids = list(scraped_ids)
+    save_state(state)
 
-    # Regenerate CSV
     generate_csv()
 
     men_final, women_final, _ = get_current_counts()
-    log.info("Final: men=%d, women=%d, total=%d", men_final, women_final, men_final + women_final)
+    log.info(f"Final: men={men_final}, women={women_final}, total={men_final + women_final}")
 
 
 if __name__ == "__main__":
