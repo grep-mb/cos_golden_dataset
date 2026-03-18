@@ -1,29 +1,24 @@
-"""Top-up script to reach exactly 100 men + 100 women in the golden dataset."""
-
 import json
-import time
-import random
+from urllib.parse import urljoin
+
+from playwright.sync_api import TimeoutError as PlaywrightTimeout
+from playwright.sync_api import sync_playwright
+from playwright_stealth import Stealth
 
 from scraper import (
     BASE_URL,
     JSONL_PATH,
-    CSV_PATH,
     STATE_PATH,
-    IMAGES_DIR,
-    DATA_DIR,
-    log,
-    extract_product_id,
-    scrape_product,
-    download_images,
-    append_jsonl,
-    generate_csv,
     _dismiss_cookie_banner,
     _scroll_to_load_products,
+    append_jsonl,
+    download_images,
+    extract_product_id,
+    generate_csv,
+    log,
     random_delay,
+    scrape_product,
 )
-from urllib.parse import urljoin
-from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
-from playwright_stealth import Stealth
 
 
 def get_current_counts():
@@ -46,24 +41,43 @@ def get_current_counts():
 
 def discover_extra_urls(page, section, scraped_ids, needed, already_discovered):
     """Find product URLs not yet scraped from deeper subcategories."""
-    known_ids = set(scraped_ids) | set(
-        extract_product_id(u) for u in already_discovered if extract_product_id(u)
-    )
+    known_ids = set(scraped_ids) | set(extract_product_id(u) for u in already_discovered if extract_product_id(u))
 
     # Subcategories to try (different from the ones already exhausted)
     extra_subcats = {
         "men": [
-            "knitwear", "coats-and-jackets", "jeans", "shoes",
-            "suits", "polo-shirts", "sweatshirts", "underwear",
-            "co-ords", "accessories-all", "bags-and-wallets",
-            "belts", "hats-scarves-and-gloves", "jewellery",
-            "linen-collection", "wardrobe-essentials",
+            "knitwear",
+            "coats-and-jackets",
+            "jeans",
+            "shoes",
+            "suits",
+            "polo-shirts",
+            "sweatshirts",
+            "underwear",
+            "co-ords",
+            "accessories-all",
+            "bags-and-wallets",
+            "belts",
+            "hats-scarves-and-gloves",
+            "jewellery",
+            "linen-collection",
+            "wardrobe-essentials",
         ],
         "women": [
-            "dresses", "skirts", "knitwear", "coats-and-jackets",
-            "jeans", "shoes", "tops", "accessories-all",
-            "bags-and-wallets", "jewellery", "swimwear",
-            "lingerie", "co-ords", "shorts",
+            "dresses",
+            "skirts",
+            "knitwear",
+            "coats-and-jackets",
+            "jeans",
+            "shoes",
+            "tops",
+            "accessories-all",
+            "bags-and-wallets",
+            "jewellery",
+            "swimwear",
+            "lingerie",
+            "co-ords",
+            "shorts",
         ],
     }
 
@@ -105,8 +119,7 @@ def main():
     men_count, women_count, scraped_ids = get_current_counts()
     men_needed = max(0, 100 - men_count)
     women_needed = max(0, 100 - women_count)
-    log.info("Current: men=%d, women=%d. Need: men=+%d, women=+%d",
-             men_count, women_count, men_needed, women_needed)
+    log.info("Current: men=%d, women=%d. Need: men=+%d, women=+%d", men_count, women_count, men_needed, women_needed)
 
     if men_needed == 0 and women_needed == 0:
         log.info("Already at 100+100, nothing to do")
@@ -125,9 +138,7 @@ def main():
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False, channel="chrome")
-        context = browser.new_context(
-            viewport={"width": 1440, "height": 900}, locale="en-GB"
-        )
+        context = browser.new_context(viewport={"width": 1440, "height": 900}, locale="en-GB")
         stealth.apply_stealth_sync(context)
         page = context.new_page()
 
@@ -137,8 +148,11 @@ def main():
 
             log.info("=== Top-up: need %d more for %s ===", needed, section)
             extra_urls = discover_extra_urls(
-                page, section, scraped_ids,
-                needed, already_discovered[section],
+                page,
+                section,
+                scraped_ids,
+                needed,
+                already_discovered[section],
             )
 
             scraped_this = 0
@@ -155,8 +169,7 @@ def main():
                     random_delay(1, 2)
                     continue
 
-                download_images(context, record["source_product_id"],
-                                record["source_product_images"])
+                download_images(context, record["source_product_id"], record["source_product_images"])
                 append_jsonl(record)
                 scraped_ids.add(pid)
                 scraped_this += 1
