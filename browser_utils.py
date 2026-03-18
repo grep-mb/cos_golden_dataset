@@ -24,7 +24,6 @@ log = logging.getLogger(__name__)
 
 
 def random_delay(lo: float = 2.0, hi: float = 4.0) -> None:
-    """Sleep for a random duration between *lo* and *hi* seconds."""
     time.sleep(random.uniform(lo, hi))
 
 
@@ -34,7 +33,6 @@ def random_delay(lo: float = 2.0, hi: float = 4.0) -> None:
 
 
 def dismiss_cookie_banner(page: Page) -> None:
-    """Try to accept/dismiss the cookie consent banner."""
     try:
         for selector in [
             'button:has-text("Accept all")',
@@ -59,7 +57,6 @@ def dismiss_cookie_banner(page: Page) -> None:
 
 
 def scroll_to_load_products(page: Page, max_scrolls: int = 15) -> None:
-    """Scroll a category listing page, clicking 'load more' buttons."""
     for i in range(max_scrolls):
         page.evaluate("window.scrollBy(0, window.innerHeight)")
         time.sleep(0.8)
@@ -82,7 +79,6 @@ def scroll_to_load_products(page: Page, max_scrolls: int = 15) -> None:
 
 
 def scroll_page(page: Page, scrolls: int = 8, delay: float = 0.6) -> None:
-    """Scroll down a product page to trigger lazy-loaded sections."""
     for _ in range(scrolls):
         page.evaluate("window.scrollBy(0, window.innerHeight)")
         time.sleep(delay)

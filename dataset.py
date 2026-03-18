@@ -102,12 +102,10 @@ def generate_csv(jsonl_path: Path = JSONL_PATH, csv_path: Path = CSV_PATH) -> No
 
 
 def load_state(path: Path = STATE_PATH) -> CrawlState:
-    """Load crawl state from disk, or return a fresh state."""
     if path.exists():
         return CrawlState.from_dict(json.loads(path.read_text()))
     return CrawlState()
 
 
 def save_state(state: CrawlState, path: Path = STATE_PATH) -> None:
-    """Persist crawl state to disk."""
     path.write_text(json.dumps(state.to_dict(), indent=2))

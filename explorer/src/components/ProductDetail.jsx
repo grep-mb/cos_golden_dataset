@@ -16,9 +16,9 @@ export default function ProductDetail({ product, onBack }) {
       <main className="main-content empty-state">
         <div className="bg-tech-grid" aria-hidden="true" />
         <div className="empty-state-content">
-          <div className="sec-label">[DATASET.EXPLORER]</div>
+          <div className="sec-label">[STYLE.EXPLORER]</div>
           <h2>Select a product<br />to inspect.</h2>
-          <p>Browse the COS golden dataset &mdash; outfit detection &amp; style classification.</p>
+          <p>Browse COS products and their &ldquo;Style with&rdquo; recommendations.</p>
         </div>
         <div className="empty-state-watermark" aria-hidden="true">COS</div>
       </main>

@@ -17,7 +17,7 @@ cos_golden_dataset/
 │   ├── golden_dataset.jsonl   # Primary output (one record per source product)
 │   ├── golden_dataset.csv     # CSV summary (auto-generated)
 │   └── images/               # Downloaded product images (gitignored)
-└── explorer/             # React + Vite dataset browser (deployed on Netlify)
+└── explorer/             # COS Style Explorer — React + Vite app (deployed on Netlify)
     ├── src/
     │   ├── components/   # App, ProductList, ProductDetail, Sidebar, etc.
     │   └── data/         # golden_dataset.json (converted from JSONL at build)
@@ -82,9 +82,9 @@ Each record in `golden_dataset.jsonl`:
 }
 ```
 
-## Explorer App
+## COS Style Explorer
 
-React + Vite app for browsing the dataset locally or via Netlify.
+React + Vite app for browsing COS products and their "Style with" recommendations. Runs locally or via Netlify.
 
 ```bash
 cd explorer

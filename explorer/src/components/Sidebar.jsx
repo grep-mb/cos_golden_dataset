@@ -6,10 +6,10 @@ export default function Sidebar({ products, totalCount, selectedId, onSelect, qu
     <aside className="sidebar">
       <div className="sidebar-header">
         <div className="sidebar-brand">
-          <h1 className="sidebar-title">COS Dataset</h1>
+          <h1 className="sidebar-title">COS Style Explorer</h1>
           <div className="sidebar-status">
             <span className="status-dot" aria-hidden="true" />
-            <span className="mono-label">{totalCount} items &mdash; Explorer</span>
+            <span className="mono-label">{totalCount} items</span>
           </div>
         </div>
         <SearchBar query={query} onChange={onSearchChange} />

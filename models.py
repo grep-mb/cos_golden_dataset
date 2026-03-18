@@ -7,8 +7,6 @@ from dataclasses import asdict, dataclass, field
 
 @dataclass
 class RecommendedProduct:
-    """A product recommended in the 'Style with' section."""
-
     product_id: str
     product_name: str
     product_url: str
@@ -17,8 +15,6 @@ class RecommendedProduct:
 
 @dataclass
 class SourceProduct:
-    """A source product with its Style-with recommendations."""
-
     source_product_id: str
     source_product_name: str
     source_product_url: str
@@ -31,9 +27,7 @@ class SourceProduct:
 
     @classmethod
     def from_dict(cls, d: dict) -> SourceProduct:
-        recs = [
-            RecommendedProduct(**rp) for rp in d.get("recommended_products", [])
-        ]
+        recs = [RecommendedProduct(**rp) for rp in d.get("recommended_products", [])]
         return cls(
             source_product_id=d["source_product_id"],
             source_product_name=d["source_product_name"],
@@ -46,8 +40,6 @@ class SourceProduct:
 
 @dataclass
 class CrawlState:
-    """Resumable crawl state: discovered URLs and already-scraped product IDs."""
-
     discovered_urls: dict[str, list[str]] = field(default_factory=dict)
     scraped_ids: list[str] = field(default_factory=list)
 

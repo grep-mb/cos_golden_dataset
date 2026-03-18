@@ -81,7 +81,6 @@ PRIORITY_SUBCATEGORIES = [
 
 
 def discover_product_urls(page: Page, section: str, max_products: int) -> list[str]:
-    """Navigate category pages for a section and collect product URLs."""
     section_url = f"{BASE_URL}/{section}"
     log.info(f"Discovering products for section: {section}")
 
@@ -169,7 +168,6 @@ def _extract_subcategory_urls(page: Page, section: str) -> list[str]:
 
 
 def scrape_product(page: Page, url: str, section: str) -> SourceProduct | None:
-    """Scrape a single product page and return the record."""
     pid = extract_product_id(url)
     if not pid:
         log.warning(f"Cannot extract product ID from {url}")
@@ -254,7 +252,6 @@ def _build_recommendations(raw_items: list[dict], source_pid: str) -> list[Recom
 
 
 def _extract_from_jsonld(page: Page) -> tuple[str, list[str]]:
-    """Extract product name and image URLs from JSON-LD structured data."""
     try:
         jsonld_blocks = page.evaluate(
             """() => {
@@ -281,7 +278,6 @@ def _extract_from_jsonld(page: Page) -> tuple[str, list[str]]:
 
 
 def _extract_product_name_from_h1(page: Page) -> str:
-    """Fallback: extract product name from h1 tag."""
     try:
         el = page.query_selector("h1")
         if el:
@@ -307,7 +303,6 @@ def _name_from_url(url: str) -> str:
 
 
 def _clean_product_name(text: str) -> str:
-    """Clean up scraped product name text (may contain price, badges, etc.)."""
     if not text:
         return ""
     lines = [line.strip() for line in text.split("\n") if line.strip()]
@@ -330,7 +325,6 @@ def _clean_product_name(text: str) -> str:
 
 
 def download_images(context: BrowserContext, product_id: str, image_urls: list[str]) -> None:
-    """Download product images using the browser context's API request."""
     if not image_urls:
         return
 
@@ -379,10 +373,7 @@ def run(max_products_per_section: int = 100, resume: bool = True) -> None:
 
             # --- Scraping phase ---
             scraped_count = sum(1 for url in product_urls if extract_product_id(url) in scraped_ids)
-            log.info(
-                f"Section {section}: {len(product_urls)} URLs discovered, "
-                f"{scraped_count} already scraped"
-            )
+            log.info(f"Section {section}: {len(product_urls)} URLs discovered, " f"{scraped_count} already scraped")
 
             products_scraped_this_section = scraped_count
             for url in product_urls:
@@ -406,8 +397,7 @@ def run(max_products_per_section: int = 100, resume: bool = True) -> None:
 
                 products_scraped_this_section += 1
                 log.info(
-                    f"  [{section}] {products_scraped_this_section}/"
-                    f"{max_products_per_section} products scraped"
+                    f"  [{section}] {products_scraped_this_section}/" f"{max_products_per_section} products scraped"
                 )
 
                 random_delay(2, 4)

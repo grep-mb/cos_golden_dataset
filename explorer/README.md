@@ -1,6 +1,6 @@
-# COS Dataset Explorer
+# COS Style Explorer
 
-A React + Vite app for browsing and searching the COS golden dataset. Displays product data from `data/golden_dataset.jsonl` with locally served product images.
+A React + Vite app for browsing COS products and their "Style with" recommendations. Displays product data from `data/golden_dataset.jsonl` with locally served product images.
 
 ## Prerequisites
 
