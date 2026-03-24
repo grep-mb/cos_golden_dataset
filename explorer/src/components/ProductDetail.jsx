@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import ImageGallery from './ImageGallery';
 import RecommendedProducts from './RecommendedProducts';
+import PipelineRecommendations from './PipelineRecommendations';
+import BaselineRecommendations from './BaselineRecommendations';
 
 export default function ProductDetail({ product, onBack }) {
   const mainRef = useRef(null);
@@ -63,6 +65,8 @@ export default function ProductDetail({ product, onBack }) {
         </div>
         <div className="product-detail-right">
           <RecommendedProducts products={product.recommended_products} />
+          <PipelineRecommendations looks={product.pipeline_recommendations} />
+          <BaselineRecommendations looks={product.baseline_recommendations} />
         </div>
       </div>
     </main>

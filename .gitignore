@@ -11,6 +11,7 @@ debug*.png
 
 # Scraper state
 crawl_state.json
+crawl_state_targeted.json
 
 # OS
 .DS_Store

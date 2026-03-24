@@ -1,12 +1,12 @@
 const FALLBACK = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="150" fill="%23f0f0f0"><rect width="120" height="150"/><text x="50%" y="50%" fill="%23999" font-size="11" text-anchor="middle" dominant-baseline="middle">No image</text></svg>';
 
-export default function RecommendedProducts({ products }) {
+export default function RecommendedProducts({ products, title = 'Style.With' }) {
   if (!products || products.length === 0) return null;
 
   return (
     <section className="recommended" aria-label="Recommended products">
       <h3 className="recommended-title sec-label">
-        [Style.With] &mdash; {products.length} item{products.length !== 1 ? 's' : ''}
+        [{title}] &mdash; {products.length} item{products.length !== 1 ? 's' : ''}
       </h3>
       <ul className="recommended-list">
         {products.map(product => (

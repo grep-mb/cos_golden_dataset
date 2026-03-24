@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const imagesRoot = join(__dirname, '..', 'data', 'images')
 const recThumbRoot = join(__dirname, '..', 'data', 'rec-thumbnails')
+const baselineThumbRoot = join(__dirname, '..', 'data', 'baseline-thumbnails')
 
 export default defineConfig({
   publicDir: false,
@@ -35,6 +36,16 @@ export default defineConfig({
           })
           stream.pipe(res)
         })
+        server.middlewares.use('/baseline-thumbnails', (req, res, next) => {
+          const filePath = join(baselineThumbRoot, req.url)
+          res.setHeader('Content-Type', 'image/jpeg')
+          const stream = createReadStream(filePath)
+          stream.on('error', () => {
+            res.statusCode = 404
+            res.end('Not found')
+          })
+          stream.pipe(res)
+        })
       },
     },
     {
@@ -45,6 +56,12 @@ export default defineConfig({
         if (existsSync(recThumbRoot)) {
           cpSync(recThumbRoot, dest, { recursive: true })
           console.log('Copied rec-thumbnails to dist/')
+        }
+        // Copy baseline-thumbnails into the build output for production
+        const baselineDest = join(__dirname, 'dist', 'baseline-thumbnails')
+        if (existsSync(baselineThumbRoot)) {
+          cpSync(baselineThumbRoot, baselineDest, { recursive: true })
+          console.log('Copied baseline-thumbnails to dist/')
         }
       },
     },
